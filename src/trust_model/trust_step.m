@@ -13,7 +13,7 @@ function state_next = trust_step(state_cur, event, params)
 %
 % The total trust is decomposed as:
 %
-%       tau[k] = tau_lat[k] + tau_rep[k] + tau_sit(r[k]),
+%       tau[k] = tau_lat[k] + tau_rep[k] + theta_sit*tau_sit(r[k]),
 %
 % and evolves according to two regimes:
 %

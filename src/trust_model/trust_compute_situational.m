@@ -9,7 +9,7 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
 % designed to be evaluated at (or around) door-trial events and then added
 % to the latent and reputation components:
 %
-%       tau(t) = tau_lat(t) + tau_rep(t) + tau_sit(risk(t))
+%       tau(t) = tau_lat(t) + tau_rep(t) + theta_sit*tau_sit(risk(t))
 %
 % The behaviour depends on whether the participant is more inclined to rely
 % on the robot or on themselves:
@@ -17,12 +17,12 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
 %   - Robot-trusting (tau_disp > sc):
 %       situational trust increases with risk:
 %
-%           tau_sit(r) = 1 - exp(-lambda_sit * r)
+%           tau_sit(r) = 1 - 2*exp(-lambda_sit * r)
 %
 %   - Self-trusting (tau_disp <= sc):
 %       situational trust decreases with risk:
 %
-%           tau_sit(r) = exp(-lambda_sit * r)
+%           tau_sit(r) = 2*exp(-lambda_sit * r) - 1
 %
 % where r = risk_value ∈ [0,1] and lambda_sit > 0 is a sensitivity
 % parameter.
@@ -69,10 +69,10 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
     % relative to self-confidence.
     if tau_disp > sc
         % Robot-trusting user: higher risk leads to higher reliance on the robot
-        tau_sit = 1 - exp(-lambda_sit * risk_value);
+        tau_sit = 1 - 2*exp(-lambda_sit * risk_value);
     else
         % Self-trusting user: higher risk leads to lower reliance on the robot
-        tau_sit = exp(-lambda_sit * risk_value);
+        tau_sit = 2*exp(-lambda_sit * risk_value) - 1;
     end
 
     % ----------------------------------------------------------------------
