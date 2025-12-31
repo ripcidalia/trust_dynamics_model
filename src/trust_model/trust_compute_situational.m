@@ -76,7 +76,7 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
     end
 
     % ----------------------------------------------------------------------
-    % 4) Clip to [0,1] to ensure a valid trust value
+    % 4) Clip to [-1,1] to ensure a valid trust value
     % ----------------------------------------------------------------------
-    tau_sit = trust_clip(tau_sit);
+    tau_sit = max(min(tau_sit, 1), -1);
 end
