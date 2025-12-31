@@ -11,7 +11,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
 %   dt      - time step for simulation (seconds)
 %   preset  - GA compute-budget preset:
 %               "moderate" | "heavy" | "overnight"
-%   theta0  - optional initial parameter guess (7x1 vector). If provided,
+%   theta0  - optional initial parameter guess (Nparams x 1 vector). If provided,
 %             it is injected into the initial GA population.
 %
 % Outputs:
@@ -22,7 +22,8 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
 %         a_succ
 %         lambda_sit
 %         lambda10
-%         kappa01 ]
+%         kappa01
+%         theta_sit ]
 %
 %   fval      - final WLS cost
 %   exitflag  - ga exit flag
@@ -81,6 +82,8 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
     %   lambda_sit ∈ [0.1, 2]
     %   lambda10   ∈ [1e-6, 1e-2]
     %   kappa01    ∈ [1e-6, 1e-2]
+    %   theta_sit  ∈ [0, 1]
+
 
     lb_theta = [
         1e-4;    % lambda_rep
@@ -90,6 +93,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
         0.10;    % lambda_sit
         1e-6;    % lambda10
         1e-6;    % kappa01
+        0;       % theta_sit
     ];
 
     ub_theta = [
@@ -100,6 +104,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
         2.0;     % lambda_sit
         1e-2;    % lambda10
         1e-2;    % kappa01
+        1;       % theta_sit
     ];
 
     %% ------------------------------------------------------------
@@ -112,7 +117,8 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
     %         a_succ
     %         lambda_sit
     %         lambda10
-    %         kappa01 ]
+    %         kappa01
+    %         theta_sit ]
     %
     % with:
     %   psi_succ = rho * phi_fail,  rho ∈ [0,1].
@@ -233,7 +239,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
     % -------------------------------------------------------------
     fprintf('[fit_trust_parameters_ga] Starting GA...\n');
 
-    nvars = 7;
+    nvars = 8;
     A = [];
     b = [];
     Aeq = [];

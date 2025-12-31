@@ -20,7 +20,8 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
 %         a_succ
 %         lambda_sit
 %         lambda10
-%         kappa01 ]
+%         kappa01
+%         theta_sit ]
 %
 %   fval      - final WLS cost
 %   exitflag  - fmincon exit flag
@@ -72,6 +73,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
     %   5: lambda_sit
     %   6: lambda10
     %   7: kappa01
+    %   8: theta_sit
 
     if nargin < 2 || isempty(theta0)
         theta0 = [
@@ -82,6 +84,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
             1.0;    % lambda_sit
             1e-4;   % lambda10
             1e-4;   % kappa01
+            0.5;    % theta_sit
         ];
         fprintf('[fit_trust_parameters_fmincon] Using default initial guess.\n');
     else
@@ -99,6 +102,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
     %   lambda_sit ∈ [0.1, 2]
     %   lambda10   ∈ [1e-6, 1e-2]
     %   kappa01    ∈ [1e-6, 1e-2]
+    %   theta_sit  ∈ [0, 1]
 
     lb = [
         1e-4;    % lambda_rep
@@ -108,6 +112,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
         0.10;    % lambda_sit
         1e-6;    % lambda10
         1e-6;    % kappa01
+        0;       % theta_sit
     ];
 
     ub = [
@@ -115,9 +120,10 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
         0.99;    % phi_fail
         0.99;    % psi_succ
         0.65;    % a_succ
-        2.0;    % lambda_sit
+        2.0;     % lambda_sit
         1e-2;    % lambda10
         1e-2;    % kappa01
+        1;       % theta_sit
     ];
 
     %% ------------------------------------------------------------

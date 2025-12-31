@@ -152,6 +152,11 @@ function state_next = trust_step(state_cur, event, params)
     else
         tau_sit = trust_compute_situational(r, state_cur.tau_disp, sc, params);
     end
+    
+    % Get weight for situational trust component (theta_sit)
+    if isfield(params, "sit") && isfield(params.sit, "lambda_sit")
+        theta_sit = params.sit.theta_sit;
+    end
 
     % ------------------------------------------------------------
     % 4) Ensure latent-related fields exist (tau_lat and state.lat)
@@ -225,7 +230,7 @@ function state_next = trust_step(state_cur, event, params)
     % ------------------------------------------------------------
     % 6) Combine components and clip total trust
     % ------------------------------------------------------------
-    tau_combined = tau_lat_next + tau_rep_next + tau_sit;
+    tau_combined = tau_lat_next + tau_rep_next + (theta_sit*tau_sit);
 
     % Participant ID for diagnostic logging (optional)
     pid = "";

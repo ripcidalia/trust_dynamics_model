@@ -32,6 +32,7 @@ theta0 = [ % Initial conditions for parameters
     1.0
     1e-4
     1e-4
+    0.5
 ];
 
 [theta_hat_ga, fval_ga, exitflag_ga, output_ga] = fit_trust_parameters(method, dt, preset, theta0);
@@ -48,6 +49,7 @@ save("results.mat", "theta_hat_ga", "fval_ga", "exitflag_ga", "output_ga");
 %     1.0
 %     1e-4
 %     1e-4
+%     0.5
 % ];
 % cfg.run_tag = "train1";
 % cfg.results_dir = "derived/fit_runs";

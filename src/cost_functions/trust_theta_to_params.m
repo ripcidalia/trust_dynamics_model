@@ -9,14 +9,15 @@ function params = trust_theta_to_params(theta)
 % theta is performed here; this function is a pure reshaping/mapping
 % utility.
 %
-% Parameter layout (current design; tau_offset is fixed, not optimized):
-%   theta(1) = lambda_rep   (lambda_rep, reputation decay rate)        >= 0
-%   theta(2) = phi_fail     (phi,  first failure magnitude)            in (0,1)
-%   theta(3) = psi_succ     (psi,  first success magnitude)            in (0,1)
-%   theta(4) = a_succ       (a,    success-shape parameter)            < 0
-%   theta(5) = lambda_sit   (lambda_sit, situational risk sensitivity) > 0
-%   theta(6) = lambda10     (lambda_10, base latent "above" rate)      > 0
-%   theta(7) = kappa01      (kappa_01,  base latent "below" rate)      > 0
+% Parameter layout:
+%   theta(1) = lambda_rep   (reputation decay rate)                 >= 0
+%   theta(2) = phi_fail     (first failure magnitude)            in (0,1)
+%   theta(3) = psi_succ     (first success magnitude)            in (0,1)
+%   theta(4) = a_succ       (success-shape parameter)                < 0
+%   theta(5) = lambda_sit   (situational risk sensitivity)           > 0
+%   theta(6) = lambda10     (base latent "above" rate)               > 0
+%   theta(7) = kappa01      (base latent "below" rate)               > 0
+%   theta(8) = theta_sit    (situational trust component weight) in (0,1)
 %
 % Fixed design constants (not estimated from data):
 %   params.lat.eps_lat       - deadzone around tau_disp for no drift
@@ -33,8 +34,8 @@ function params = trust_theta_to_params(theta)
 %   - trust_compute_situational (params.sit.*)
 
     % Require at least the expected number of free parameters.
-    if numel(theta) < 7
-        error("trust_theta_to_params: expected at least 7 parameters, got %d.", numel(theta));
+    if numel(theta) < 8
+        error("trust_theta_to_params: expected at least 8 parameters, got %d.", numel(theta));
     end
 
     params = struct();
@@ -82,6 +83,7 @@ function params = trust_theta_to_params(theta)
     % ------------------------------------------------------------
     params.sit = struct();
     params.sit.lambda_sit = theta(5);
+    params.sit.theta_sit = theta(8);
 
     % ------------------------------------------------------------
     % Dispositional trust

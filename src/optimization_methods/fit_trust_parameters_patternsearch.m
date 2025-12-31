@@ -12,7 +12,7 @@ function [theta_hat, fval, exitflag, output] = ...
 %   dt      - time step for simulation (seconds)
 %   preset  - patternsearch compute-budget preset:
 %               "moderate" | "heavy" | "overnight"
-%   theta0  - optional initial parameter guess (7x1 vector). If not provided,
+%   theta0  - optional initial parameter guess (Nparams x 1 vector). If not provided,
 %             a default heuristic initialisation is used.
 %
 % Outputs:
@@ -23,7 +23,8 @@ function [theta_hat, fval, exitflag, output] = ...
 %         a_succ
 %         lambda_sit
 %         lambda10
-%         kappa01 ]
+%         kappa01
+%         theta_sit ]
 %
 %   fval      - final WLS cost
 %   exitflag  - patternsearch exit flag
@@ -86,6 +87,7 @@ function [theta_hat, fval, exitflag, output] = ...
             1.0;    % lambda_sit
             1e-4;   % lambda10
             1e-4;   % kappa01
+            0.5;    % theta_sit
         ];
         fprintf('[fit_trust_parameters_patternsearch] Using default initial guess.\n');
     else
@@ -104,6 +106,7 @@ function [theta_hat, fval, exitflag, output] = ...
         0.10;    % lambda_sit
         1e-6;    % lambda10
         1e-6;    % kappa01
+        0;       % theta_sit
     ];
 
     ub_theta = [
@@ -111,9 +114,10 @@ function [theta_hat, fval, exitflag, output] = ...
         0.99;    % phi_fail
         0.99;    % psi_succ
         0.65;    % a_succ
-        2.0;    % lambda_sit
+        2.0;     % lambda_sit
         1e-2;    % lambda10
         1e-2;    % kappa01
+        1;       % theta_sit
     ];
 
     %% ------------------------------------------------------------

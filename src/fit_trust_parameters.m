@@ -24,7 +24,7 @@ function [theta_hat, fval, exitflag, output] = ...
 %   preset - solver preset name (optional, method-dependent)
 %            For GA:          "moderate" | "heavy" | "overnight"
 %            For patternsearch: "moderate" | "heavy" | "overnight"
-%   theta0 - optional initial parameter guess (7x1 vector). If provided,
+%   theta0 - optional initial parameter guess (Nparams x 1 vector). If provided,
 %            it is used to initialise the solver.
 %
 % Outputs:
@@ -35,7 +35,8 @@ function [theta_hat, fval, exitflag, output] = ...
 %         a_succ
 %         lambda_sit
 %         lambda10
-%         kappa01 ]
+%         kappa01
+%         theta_sit ]
 %
 %   fval      - final WLS cost
 %   exitflag  - solver exit flag
