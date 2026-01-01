@@ -28,8 +28,8 @@ function [tau_lat_next, lat_state_next] = trust_update_latent_sequence( ...
 %   dt            - time step in seconds (>= 0).
 %   params.lat    - struct containing latent trust parameters:
 %                       .eps_lat
-%                       .lambda10
-%                       .kappa01
+%                       .lambda_lat
+%                       .kappa_lat
 %                       .gamma_above,  .epsilon_above
 %                       .gamma_below,  .epsilon_below
 %                       .tau_offset
@@ -77,8 +77,8 @@ function [tau_lat_next, lat_state_next] = trust_update_latent_sequence( ...
     % 2) Read latent parameters (with defaults if missing)
     % ---------------------------------------------------------------------
     eps_lat   = getfield_with_default(params, "lat", struct(), "this is bullshit, because when we determine the ",   1e-3);
-    lambda10  = getfield_with_default(params, "lat", struct(), "lambda10",  1e-4);
-    kappa01   = getfield_with_default(params, "lat", struct(), "kappa01",   1e-4);
+    lambda_lat  = getfield_with_default(params, "lat", struct(), "lambda_lat",  1e-4);
+    kappa_lat   = getfield_with_default(params, "lat", struct(), "kappa_lat",   1e-4);
 
     gamma_ab  = getfield_with_default(params, "lat", struct(), "gamma_above",   0.05);
     eps_ab    = getfield_with_default(params, "lat", struct(), "epsilon_above", 0.01);
@@ -135,7 +135,7 @@ function [tau_lat_next, lat_state_next] = trust_update_latent_sequence( ...
             % ABOVE: tau_lat > tau_disp
             mode = "above";
             lambda_seq = compute_lambda_above(tau_disp, tau_lat_cur, ...
-                                              lambda10, gamma_ab, eps_ab);
+                                              lambda_lat, gamma_ab, eps_ab);
             kappa_seq  = NaN;
             sigma      = NaN;
             tau0_ep    = tau_lat_cur;
@@ -144,7 +144,7 @@ function [tau_lat_next, lat_state_next] = trust_update_latent_sequence( ...
             % BELOW: tau_lat < tau_disp
             mode = "below";
             [kappa_seq, sigma0] = compute_kappa_below(tau_disp, tau_lat_cur, ...
-                                                      kappa01, gamma_bl, eps_bl, tau_off);
+                                                      kappa_lat, gamma_bl, eps_bl, tau_off);
             lambda_seq = NaN;
             sigma      = sigma0;
             tau0_ep    = tau_lat_cur;
@@ -225,12 +225,12 @@ end
 % =====================================================================
 % Helper: compute lambda for ABOVE regime
 % =====================================================================
-function lambda_val = compute_lambda_above(tau_disp, tau0, lambda10, gamma, eps_val)
+function lambda_val = compute_lambda_above(tau_disp, tau0, lambda_lat, gamma, eps_val)
 % Compute the episode-specific exponential rate λ_{τ0,τdisp} for the
 % "above" regime given:
 %   - tau_disp  : dispositional trust
 %   - tau0      : latent trust at episode start (tau0 > tau_disp)
-%   - lambda10  : base rate λ_{1,0}
+%   - lambda_lat  : base rate λ_{1,0}
 %   - gamma     : shape parameter for the mapping
 %   - eps_val   : minimum gap parameter
 %
@@ -239,12 +239,12 @@ function lambda_val = compute_lambda_above(tau_disp, tau0, lambda10, gamma, eps_
 %   2) Derive λ_{τ0,τdisp} from λ_{1,τdisp}.
 
     % Defensive defaults and basic guards
-    if ~isfinite(lambda10) || lambda10 <= 0
+    if ~isfinite(lambda_lat) || lambda_lat <= 0
         lambda_val = 0;
         return;
     end
     if tau_disp <= 0 || tau_disp >= 1
-        lambda_val = lambda10;
+        lambda_val = lambda_lat;
         return;
     end
     if gamma <= 0 || gamma >= 1
@@ -255,7 +255,7 @@ function lambda_val = compute_lambda_above(tau_disp, tau0, lambda10, gamma, eps_
     end
 
     % λ_{1,τdisp}
-    lambda_1_disp = lambda10 * ( ...
+    lambda_1_disp = lambda_lat * ( ...
         log(gamma / (1 - tau_disp)) / log(tau_disp) );
 
     % λ_{τ0,τdisp}
@@ -270,7 +270,7 @@ function lambda_val = compute_lambda_above(tau_disp, tau0, lambda10, gamma, eps_
 
     % Final safety check.
     if ~isfinite(lambda_val) || lambda_val < 0
-        lambda_val = max(lambda10, 0);
+        lambda_val = max(lambda_lat, 0);
     end
 end
 
@@ -278,12 +278,12 @@ end
 % Helper: compute kappa + initial sigma for BELOW regime
 % =====================================================================
 function [kappa_val, sigma0] = compute_kappa_below(tau_disp, tau0, ...
-                                                   kappa01, gamma, eps_val, tau_off)
+                                                   kappa_lat, gamma, eps_val, tau_off)
 % Compute the episode-specific logistic rate κ_{τ0,τdisp} and initial
 % logistic state σ[0] for the "below" regime given:
 %   - tau_disp  : dispositional trust
 %   - tau0      : latent trust at episode start (tau0 < tau_disp)
-%   - kappa01   : base rate κ_{0,1}
+%   - kappa_lat   : base rate κ_{0,1}
 %   - gamma     : shape parameter
 %   - eps_val   : minimum gap parameter
 %   - tau_off   : offset used in the logistic mapping.
@@ -294,13 +294,13 @@ function [kappa_val, sigma0] = compute_kappa_below(tau_disp, tau0, ...
 % The initial σ[0] is obtained from tau_disp, tau0, and tau_off.
 
     % Defaults if base rate is invalid
-    if ~isfinite(kappa01) || kappa01 <= 0
+    if ~isfinite(kappa_lat) || kappa_lat <= 0
         kappa_val = 0;
         sigma0    = 0.5;
         return;
     end
     if tau_disp <= 0 || tau_disp >= 1
-        kappa_val = kappa01;
+        kappa_val = kappa_lat;
         sigma0    = 0.5;
         return;
     end
@@ -321,7 +321,7 @@ function [kappa_val, sigma0] = compute_kappa_below(tau_disp, tau0, ...
     % κ_{0,τdisp}
     num1 = log(gamma / (tau_disp + tau_off - gamma)) - log(tau_disp / tau_off);
     den1 = log(tau_off) + log((1 - tau_disp) / (tau_disp + tau_off));
-    kappa_0_disp = kappa01 * (num1 / den1);
+    kappa_0_disp = kappa_lat * (num1 / den1);
 
     % κ_{τ0,τdisp}
     num2 = log( (tau_disp - tau0) / tau_off ) ...
@@ -336,7 +336,7 @@ function [kappa_val, sigma0] = compute_kappa_below(tau_disp, tau0, ...
     end
 
     if ~isfinite(kappa_val) || kappa_val < 0
-        kappa_val = max(kappa01, 0);
+        kappa_val = max(kappa_lat, 0);
     end
 end
 

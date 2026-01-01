@@ -71,14 +71,14 @@ function measure_trust_cost_runtime(dt)
     % Use the same initial parameter vector as in fit_trust_parameters for
     % consistency when timing trust_cost_all.
     theta0 = [ ...
-        1e-3;   % 1) lambda_rep
-        0.15;   % 2) phi_fail
-        0.10;   % 3) psi_succ
-       -0.20;   % 4) a_succ
-        3.0;    % 5) lambda_sit
-        1e-4;   % 6) lambda10
-        1e-4;   % 7) kappa01
-        0.05;   % 8) tau_offset
+        3e-3;   % 1) lambda_rep
+        0.50;   % 2) alpha_sit
+        1.0;    % 3) lambda_sit
+        0.15;   % 4) phi_fail
+        0.10;   % 5) phi_succ
+        0.20;   % 6) a_succ
+        1e-4;   % 7) lambda_lat
+        1e-4;   % 8) kappa_lat
     ];
 
     % Warm-up call to account for JIT compilation and internal caching

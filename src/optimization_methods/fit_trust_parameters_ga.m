@@ -11,28 +11,28 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
 %   dt      - time step for simulation (seconds)
 %   preset  - GA compute-budget preset:
 %               "moderate" | "heavy" | "overnight"
-%   theta0  - optional initial parameter guess (Nparams x 1 vector). If provided,
+%   theta0  - optional initial parameter guess (8 x 1 vector). If provided,
 %             it is injected into the initial GA population.
 %
 % Outputs:
 %   theta_hat - estimated parameter vector:
 %       [ lambda_rep
-%         phi_fail
-%         psi_succ
-%         a_succ
+%         alpha_sit
 %         lambda_sit
-%         lambda10
-%         kappa01
-%         theta_sit ]
+%         phi_fail
+%         phi_succ
+%         a_succ
+%         lambda_lat
+%         kappa_lat ]
 %
 %   fval      - final WLS cost
 %   exitflag  - ga exit flag
 %   output    - ga output struct
 %
 % Notes:
-%   - The inequality constraint psi_succ <= phi_fail is enforced by
+%   - The inequality constraint phi_succ <= phi_fail is enforced by
 %     construction using a re-parameterisation:
-%         psi_succ = rho * phi_fail,  with rho ∈ [0,1].
+%         phi_succ = rho * phi_fail,  with rho ∈ [0,1].
 
     if nargin < 2
         error('fit_trust_parameters_ga requires (dt, preset).');
@@ -75,60 +75,60 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
     %% ------------------------------------------------------------
     % 2) Bounds in theta space (same physical bounds as fmincon)
     % -------------------------------------------------------------
-    %   lambda_rep ∈ [1e-4, 0.1]
-    %   phi_fail   ∈ [0.01, 0.99]
-    %   psi_succ   ∈ [0.01, 0.99], with constraint psi_succ <= phi_fail
-    %   a_succ     ∈ [0.01, 0.65]
-    %   lambda_sit ∈ [0.1, 2]
-    %   lambda10   ∈ [1e-6, 1e-2]
-    %   kappa01    ∈ [1e-6, 1e-2]
-    %   theta_sit  ∈ [0, 1]
+    %   lambda_rep ∈ [1e-4, 0.10], reputation should affect only first door trials
+    %   alpha_sit  ∈ [0.00, 1.00], weight factor
+    %   lambda_sit ∈ [0.10, 2.00], from graphical inspection
+    %   phi_fail   ∈ [0.00, 1.00]
+    %   phi_succ   ∈ [0.00, 1.00], with constraint phi_succ <= phi_fail
+    %   a_succ     ∈ [0.01, 0.65], from graphical inspection
+    %   lambda_lat ∈ [1e-6, 1e-2], not inteded for fast dynamics
+    %   kappa_lat  ∈ [1e-6, 1e-2], not inteded for fast dynamics
 
 
     lb_theta = [
         1e-4;    % lambda_rep
-        0.01;    % phi_fail
-        0.01;    % psi_succ
-        0.01;    % a_succ
+        0;       % alpha_sit
         0.10;    % lambda_sit
-        1e-6;    % lambda10
-        1e-6;    % kappa01
-        0;       % theta_sit
+        0;       % phi_fail
+        0;       % phi_succ
+        0.01;    % a_succ
+        1e-6;    % lambda_lat
+        1e-6;    % kappa_lat
     ];
 
     ub_theta = [
         0.10;    % lambda_rep
-        0.99;    % phi_fail
-        0.99;    % psi_succ
+        1;       % alpha_sit
+        2;       % lambda_sit
+        1;       % phi_fail
+        1;       % phi_succ
         0.65;    % a_succ
-        2.0;     % lambda_sit
-        1e-2;    % lambda10
-        1e-2;    % kappa01
-        1;       % theta_sit
+        1e-2;    % lambda_lat
+        1e-2;    % kappa_lat
     ];
 
     %% ------------------------------------------------------------
-    % 3) Re-parameterisation for psi_succ <= phi_fail
+    % 3) Re-parameterisation for phi_succ <= phi_fail
     % -------------------------------------------------------------
     % Optimisation variable:
     %   x = [ lambda_rep
+    %         alpha_sit
+    %         lambda_sit
     %         phi_fail
     %         rho
     %         a_succ
-    %         lambda_sit
-    %         lambda10
-    %         kappa01
-    %         theta_sit ]
+    %         lambda_lat
+    %         kappa_lat ]
     %
     % with:
-    %   psi_succ = rho * phi_fail,  rho ∈ [0,1].
+    %   phi_succ = rho * phi_fail,  rho ∈ [0,1].
     %
     lb_x = lb_theta;
     ub_x = ub_theta;
 
     % Replace bounds for the third variable (rho)
-    lb_x(3) = 0.0;
-    ub_x(3) = 1.0;
+    lb_x(5) = 0.0;
+    ub_x(5) = 1.0;
 
     %% ------------------------------------------------------------
     % 4) Define SAFE objective wrapper for GA
@@ -170,7 +170,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
         end
     end
 
-    % Map x -> theta (enforces psi_succ <= phi_fail by construction)
+    % Map x -> theta (enforces phi_succ <= phi_fail by construction)
     function theta = x_to_theta(x_vec)
         x_vec = x_vec(:);
         theta = x_vec;
@@ -181,8 +181,8 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
         % Ensure rho stays within [0,1] even if GA produces slight numerical drift
         rho = min(max(rho, 0.0), 1.0);
 
-        psi_succ = rho * phi_fail;
-        theta(3) = psi_succ;
+        phi_succ = rho * phi_fail;
+        theta(5) = phi_succ;
 
         % Safety: keep theta within physical bounds
         theta = min(max(theta, lb_theta), ub_theta);
@@ -218,7 +218,7 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_ga(dt, prese
         phi0   = theta0(2);
         psi0   = theta0(3);
 
-        % Recover rho from psi_succ = rho * phi_fail
+        % Recover rho from phi_succ = rho * phi_fail
         if phi0 > 0
             rho0 = psi0 / phi0;
         else

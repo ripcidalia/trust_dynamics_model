@@ -13,7 +13,7 @@ function state_next = trust_step(state_cur, event, params)
 %
 % The total trust is decomposed as:
 %
-%       tau[k] = tau_lat[k] + tau_rep[k] + theta_sit*tau_sit(r[k]),
+%       tau[k] = tau_lat[k] + tau_rep[k] + alpha_sit*tau_sit(r[k]),
 %
 % and evolves according to two regimes:
 %
@@ -153,9 +153,9 @@ function state_next = trust_step(state_cur, event, params)
         tau_sit = trust_compute_situational(r, state_cur.tau_disp, sc, params);
     end
     
-    % Get weight for situational trust component (theta_sit)
+    % Get weight for situational trust component (alpha_sit)
     if isfield(params, "sit") && isfield(params.sit, "lambda_sit")
-        theta_sit = params.sit.theta_sit;
+        alpha_sit = params.sit.alpha_sit;
     end
 
     % ------------------------------------------------------------
@@ -230,7 +230,7 @@ function state_next = trust_step(state_cur, event, params)
     % ------------------------------------------------------------
     % 6) Combine components and clip total trust
     % ------------------------------------------------------------
-    tau_combined = tau_lat_next + tau_rep_next + (theta_sit*tau_sit);
+    tau_combined = tau_lat_next + tau_rep_next + (alpha_sit*tau_sit);
 
     % Participant ID for diagnostic logging (optional)
     pid = "";

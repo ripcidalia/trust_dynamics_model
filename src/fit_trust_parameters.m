@@ -30,13 +30,13 @@ function [theta_hat, fval, exitflag, output] = ...
 % Outputs:
 %   theta_hat - estimated parameter vector:
 %       [ lambda_rep
-%         phi_fail
-%         psi_succ
-%         a_succ
+%         alpha_sit
 %         lambda_sit
-%         lambda10
-%         kappa01
-%         theta_sit ]
+%         phi_fail
+%         phi_succ
+%         a_succ
+%         lambda_lat
+%         kappa_lat ]
 %
 %   fval      - final WLS cost
 %   exitflag  - solver exit flag

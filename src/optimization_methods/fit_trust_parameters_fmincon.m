@@ -9,19 +9,19 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
 %
 % Inputs:
 %   dt     - time step for simulation (seconds)
-%   theta0 - optional initial parameter guess (7x1 vector). If not provided,
+%   theta0 - optional initial parameter guess (8x1 vector). If not provided,
 %            a default heuristic initialisation is used.
 %
 % Outputs:
 %   theta_hat - estimated parameter vector:
 %       [ lambda_rep
-%         phi_fail
-%         psi_succ
-%         a_succ
+%         alpha_sit
 %         lambda_sit
-%         lambda10
-%         kappa01
-%         theta_sit ]
+%         phi_fail
+%         phi_succ
+%         a_succ
+%         lambda_lat
+%         kappa_lat ]
 %
 %   fval      - final WLS cost
 %   exitflag  - fmincon exit flag
@@ -67,24 +67,24 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
     % -------------------------------------------------------------
     % Order:
     %   1: lambda_rep
-    %   2: phi_fail
-    %   3: psi_succ
-    %   4: a_succ
-    %   5: lambda_sit
-    %   6: lambda10
-    %   7: kappa01
-    %   8: theta_sit
+    %   2: alpha_sit
+    %   3: lambda_sit
+    %   4: phi_fail
+    %   5: phi_succ
+    %   6: a_succ
+    %   7: lambda_lat
+    %   8: kappa_lat
 
     if nargin < 2 || isempty(theta0)
         theta0 = [
             1e-3;   % lambda_rep
-            0.15;   % phi_fail
-            0.10;   % psi_succ
-            0.20;   % a_succ
+            0.5;    % alpha_sit
             1.0;    % lambda_sit
-            1e-4;   % lambda10
-            1e-4;   % kappa01
-            0.5;    % theta_sit
+            0.15;   % phi_fail
+            0.10;   % phi_succ
+            0.20;   % a_succ
+            1e-4;   % lambda_lat
+            1e-4;   % kappa_lat
         ];
         fprintf('[fit_trust_parameters_fmincon] Using default initial guess.\n');
     else
@@ -95,35 +95,35 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
     %% ------------------------------------------------------------
     % 3) Bounds on parameters 
     % -------------------------------------------------------------
-    %   lambda_rep ∈ [1e-4, 0.1]
-    %   phi_fail   ∈ [0.01, 0.99]
-    %   psi_succ   ∈ [0.01, 0.99], with constraint psi_succ <= phi_fail
-    %   a_succ     ∈ [0.01, 0.65]
-    %   lambda_sit ∈ [0.1, 2]
-    %   lambda10   ∈ [1e-6, 1e-2]
-    %   kappa01    ∈ [1e-6, 1e-2]
-    %   theta_sit  ∈ [0, 1]
+    %   lambda_rep ∈ [1e-4, 0.10], reputation should affect only first door trials
+    %   alpha_sit  ∈ [0.00, 1.00], weight factor
+    %   lambda_sit ∈ [0.10, 2.00], from graphical inspection
+    %   phi_fail   ∈ [0.00, 1.00]
+    %   phi_succ   ∈ [0.00, 1.00], with constraint phi_succ <= phi_fail
+    %   a_succ     ∈ [0.01, 0.65], from graphical inspection
+    %   lambda_lat ∈ [1e-6, 1e-2], not inteded for fast dynamics
+    %   kappa_lat  ∈ [1e-6, 1e-2], not inteded for fast dynamics
 
     lb = [
         1e-4;    % lambda_rep
-        0.01;    % phi_fail
-        0.01;    % psi_succ
-        0.01;    % a_succ
+        0;       % alpha_sit
         0.10;    % lambda_sit
-        1e-6;    % lambda10
-        1e-6;    % kappa01
-        0;       % theta_sit
+        0;       % phi_fail
+        0;       % phi_succ
+        0.01;    % a_succ
+        1e-6;    % lambda_lat
+        1e-6;    % kappa_lat
     ];
 
     ub = [
         0.10;    % lambda_rep
-        0.99;    % phi_fail
-        0.99;    % psi_succ
+        1;       % alpha_sit
+        2;       % lambda_sit
+        1;       % phi_fail
+        1;       % phi_succ
         0.65;    % a_succ
-        2.0;     % lambda_sit
-        1e-2;    % lambda10
-        1e-2;    % kappa01
-        1;       % theta_sit
+        1e-2;    % lambda_lat
+        1e-2;    % kappa_lat
     ];
 
     %% ------------------------------------------------------------
@@ -169,19 +169,19 @@ function [theta_hat, fval, exitflag, output] = fit_trust_parameters_fmincon(dt, 
     obj = @(theta) safe_obj(theta);
 
     %% ------------------------------------------------------------
-    % 5) Nonlinear constraints (phi_fail >= psi_succ)
+    % 5) Nonlinear constraints (phi_fail >= phi_succ)
     % -------------------------------------------------------------
     % c(theta) <= 0
-    %   -> c1 = psi_succ - phi_fail <= 0
+    %   -> c1 = phi_succ - phi_fail <= 0
     %
     % No equality constraints.
     %
     function [c, ceq] = trust_nonlcon(theta_vec)
-        phi_fail = theta_vec(2);
-        psi_succ = theta_vec(3);
+        phi_fail = theta_vec(4);
+        phi_succ = theta_vec(5);
 
-        % Enforce psi_succ <= phi_fail
-        c1 = psi_succ - phi_fail;
+        % Enforce phi_succ <= phi_fail
+        c1 = phi_succ - phi_fail;
 
         c   = c1;     % inequality vector
         ceq = [];     % no equalities

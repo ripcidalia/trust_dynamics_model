@@ -47,13 +47,14 @@ function sanity_check_trust_cost(theta)
         % trust_cost_one_participant. Numerical values are chosen to be
         % consistent with other scripts in this project.
         theta = [ ...            
-            3.0;    % 1) lambda_rep
-            0.30;   % 2) phi_fail
-            0.15;   % 3) psi_succ
-           -0.20;   % 4) a_succ
-            0.20;   % 5) lambda_sit
-            1e-4;   % 6) lambda10
-            1e-4;   % 7) kappa01
+            3e-3;   % 1) lambda_rep
+            0.5;    % 2) aplha_sit
+            1;      % 3) lambda_sit
+            0.15;   % 4) phi_fail
+            0.10;   % 5) phi_succ
+            0.20;   % 6) a_succ
+            1e-4;   % 7) lambda_lat
+            1e-4;   % 8) kappa_lat
         ];
         fprintf("Using DEFAULT theta0:\n");
     else

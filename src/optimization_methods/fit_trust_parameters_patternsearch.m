@@ -12,28 +12,28 @@ function [theta_hat, fval, exitflag, output] = ...
 %   dt      - time step for simulation (seconds)
 %   preset  - patternsearch compute-budget preset:
 %               "moderate" | "heavy" | "overnight"
-%   theta0  - optional initial parameter guess (Nparams x 1 vector). If not provided,
+%   theta0  - optional initial parameter guess (8 x 1 vector). If not provided,
 %             a default heuristic initialisation is used.
 %
 % Outputs:
 %   theta_hat - estimated parameter vector:
 %       [ lambda_rep
-%         phi_fail
-%         psi_succ
-%         a_succ
+%         alpha_sit
 %         lambda_sit
-%         lambda10
-%         kappa01
-%         theta_sit ]
+%         phi_fail
+%         phi_succ
+%         a_succ
+%         lambda_lat
+%         kappa_lat ]
 %
 %   fval      - final WLS cost
 %   exitflag  - patternsearch exit flag
 %   output    - patternsearch output struct
 %
 % Notes:
-%   - The inequality constraint psi_succ <= phi_fail is enforced by
+%   - The inequality constraint phi_succ <= phi_fail is enforced by
 %     construction using a re-parameterisation:
-%         psi_succ = rho * phi_fail,  with rho ∈ [0,1].
+%         phi_succ = rho * phi_fail,  with rho ∈ [0,1].
 %     patternsearch optimises x where x(3)=rho, and theta is recovered.
 
     if nargin < 2
@@ -78,16 +78,26 @@ function [theta_hat, fval, exitflag, output] = ...
     %% ------------------------------------------------------------
     % 2) Default initial parameter guess theta0
     % -------------------------------------------------------------
+    % Order:
+    %   1: lambda_rep
+    %   2: alpha_sit
+    %   3: lambda_sit
+    %   4: phi_fail
+    %   5: phi_succ
+    %   6: a_succ
+    %   7: lambda_lat
+    %   8: kappa_lat
+
     if isempty(theta0)
         theta0 = [
             1e-3;   % lambda_rep
-            0.15;   % phi_fail
-            0.10;   % psi_succ
-            0.20;   % a_succ
+            0.5;    % alpha_sit
             1.0;    % lambda_sit
-            1e-4;   % lambda10
-            1e-4;   % kappa01
-            0.5;    % theta_sit
+            0.15;   % phi_fail
+            0.10;   % phi_succ
+            0.20;   % a_succ
+            1e-4;   % lambda_lat
+            1e-4;   % kappa_lat
         ];
         fprintf('[fit_trust_parameters_patternsearch] Using default initial guess.\n');
     else
@@ -98,50 +108,60 @@ function [theta_hat, fval, exitflag, output] = ...
     %% ------------------------------------------------------------
     % 3) Bounds on parameters
     % -------------------------------------------------------------
+    %   lambda_rep ∈ [1e-4, 0.10], reputation should affect only first door trials
+    %   alpha_sit  ∈ [0.00, 1.00], weight factor
+    %   lambda_sit ∈ [0.10, 2.00], from graphical inspection
+    %   phi_fail   ∈ [0.00, 1.00]
+    %   phi_succ   ∈ [0.00, 1.00], with constraint phi_succ <= phi_fail
+    %   a_succ     ∈ [0.01, 0.65], from graphical inspection
+    %   lambda_lat ∈ [1e-6, 1e-2], not inteded for fast dynamics
+    %   kappa_lat  ∈ [1e-6, 1e-2], not inteded for fast dynamics
+
     lb_theta = [
         1e-4;    % lambda_rep
-        0.01;    % phi_fail
-        0.01;    % psi_succ
-        0.01;    % a_succ
+        0;       % alpha_sit
         0.10;    % lambda_sit
-        1e-6;    % lambda10
-        1e-6;    % kappa01
-        0;       % theta_sit
+        0;       % phi_fail
+        0;       % phi_succ
+        0.01;    % a_succ
+        1e-6;    % lambda_lat
+        1e-6;    % kappa_lat
     ];
 
     ub_theta = [
         0.10;    % lambda_rep
-        0.99;    % phi_fail
-        0.99;    % psi_succ
+        1;       % alpha_sit
+        2;       % lambda_sit
+        1;       % phi_fail
+        1;       % phi_succ
         0.65;    % a_succ
-        2.0;     % lambda_sit
-        1e-2;    % lambda10
-        1e-2;    % kappa01
-        1;       % theta_sit
+        1e-2;    % lambda_lat
+        1e-2;    % kappa_lat
     ];
 
     %% ------------------------------------------------------------
-    % 4) Re-parameterisation for psi_succ <= phi_fail
+    % 4) Re-parameterisation for phi_succ <= phi_fail
     % -------------------------------------------------------------
     % Optimisation variable:
     %   x = [ lambda_rep
+    %         alpha_sit
+    %         lambda_sit
     %         phi_fail
     %         rho
     %         a_succ
-    %         lambda_sit
-    %         lambda10
-    %         kappa01 ]
+    %         lambda_lat
+    %         kappa_lat ]
     %
     % with:
-    %   psi_succ = rho * phi_fail,  rho ∈ [0,1].
+    %   phi_succ = rho * phi_fail,  rho ∈ [0,1].
     lb_x = lb_theta;
     ub_x = ub_theta;
-    lb_x(3) = 0.0;
-    ub_x(3) = 1.0;
+    lb_x(5) = 0.0;
+    ub_x(5) = 1.0;
 
     % Convert theta0 -> x0
-    phi0 = theta0(2);
-    psi0 = theta0(3);
+    phi0 = theta0(4);
+    psi0 = theta0(5);
     if phi0 > 0
         rho0 = psi0 / phi0;
     else
@@ -150,7 +170,7 @@ function [theta_hat, fval, exitflag, output] = ...
     rho0 = min(max(rho0, 0.0), 1.0);
 
     x0 = theta0(:);
-    x0(3) = rho0;
+    x0(5) = rho0;
 
     %% ------------------------------------------------------------
     % 5) Define SAFE objective wrapper for patternsearch
@@ -192,12 +212,12 @@ function [theta_hat, fval, exitflag, output] = ...
         x_vec = x_vec(:);
         theta = x_vec;
 
-        phi_fail = theta(2);
-        rho      = theta(3);
+        phi_fail = theta(4);
+        rho      = theta(5);
         rho = min(max(rho, 0.0), 1.0);
 
-        psi_succ = rho * phi_fail;
-        theta(3) = psi_succ;
+        phi_succ = rho * phi_fail;
+        theta(5) = phi_succ;
 
         % Safety: keep theta within physical bounds
         theta = min(max(theta, lb_theta), ub_theta);

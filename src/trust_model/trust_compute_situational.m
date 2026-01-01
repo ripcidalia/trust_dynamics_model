@@ -9,7 +9,7 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
 % designed to be evaluated at (or around) door-trial events and then added
 % to the latent and reputation components:
 %
-%       tau(t) = tau_lat(t) + tau_rep(t) + theta_sit*tau_sit(risk(t))
+%       tau(t) = tau_lat(t) + tau_rep(t) + alpha_sit*tau_sit(risk(t))
 %
 % The behaviour depends on whether the participant is more inclined to rely
 % on the robot or on themselves:

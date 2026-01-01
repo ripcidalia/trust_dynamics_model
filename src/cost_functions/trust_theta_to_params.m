@@ -11,13 +11,13 @@ function params = trust_theta_to_params(theta)
 %
 % Parameter layout:
 %   theta(1) = lambda_rep   (reputation decay rate)                 >= 0
-%   theta(2) = phi_fail     (first failure magnitude)            in (0,1)
-%   theta(3) = psi_succ     (first success magnitude)            in (0,1)
-%   theta(4) = a_succ       (success-shape parameter)                < 0
-%   theta(5) = lambda_sit   (situational risk sensitivity)           > 0
-%   theta(6) = lambda10     (base latent "above" rate)               > 0
-%   theta(7) = kappa01      (base latent "below" rate)               > 0
-%   theta(8) = theta_sit    (situational trust component weight) in (0,1)
+%   theta(2) = alpha_sit    (situational trust component weight) in [0,1]
+%   theta(3) = lambda_sit   (situational risk sensitivity)           > 0
+%   theta(4) = phi_fail     (first failure magnitude)            in [0,1]
+%   theta(5) = phi_succ     (first success magnitude)            in [0,1]
+%   theta(6) = a_succ       (success-shape parameter)                < 0
+%   theta(7) = lambda_lat   (base latent "above" rate)               > 0
+%   theta(8) = kappa_lat    (base latent "below" rate)               > 0
 %
 % Fixed design constants (not estimated from data):
 %   params.lat.eps_lat       - deadzone around tau_disp for no drift
@@ -41,12 +41,25 @@ function params = trust_theta_to_params(theta)
     params = struct();
 
     % ------------------------------------------------------------
+    % Reputation dynamics (global decay of initial reputation)
+    % ------------------------------------------------------------
+    params.rep = struct();
+    params.rep.lambda_rep = theta(1);   % decay rate for reputation
+
+    % ------------------------------------------------------------
+    % Situational trust (instantaneous risk-based component)
+    % ------------------------------------------------------------
+    params.sit = struct();
+    params.sit.alpha_sit  = theta(2);   % situational trust weight factor
+    params.sit.lambda_sit = theta(3);   % decay rate for situational trust
+
+    % ------------------------------------------------------------
     % Personal experience (event-based updates at door trials)
     % ------------------------------------------------------------
     params.exp = struct();
-    params.exp.phi_fail = theta(2);   % first failure magnitude
-    params.exp.psi_succ = theta(3);   % first success magnitude
-    params.exp.a_succ   = theta(4);   % success streak shape parameter
+    params.exp.phi_fail   = theta(4);   % first failure magnitude
+    params.exp.phi_succ   = theta(5);   % first success magnitude
+    params.exp.a_succ     = theta(6);   % success streak shape parameter
 
     % ------------------------------------------------------------
     % Latent trust dynamics (between door events)
@@ -54,8 +67,8 @@ function params = trust_theta_to_params(theta)
     params.lat = struct();
 
     % Episode-specific base rates (estimated from data)
-    params.lat.lambda10 = theta(6);   % base rate for "above" latent episodes
-    params.lat.kappa01  = theta(7);   % base rate for "below" latent episodes
+    params.lat.lambda_lat = theta(7);   % base decay rate for "above" latent episodes
+    params.lat.kappa_lat  = theta(8);   % base growth rate for "below" latent episodes
 
     % Small deadzone around tau_disp where no latent drift is applied.
     % This is kept fixed rather than estimated.
@@ -70,21 +83,8 @@ function params = trust_theta_to_params(theta)
 
     params.lat.gamma_below   = 0.10;
     params.lat.epsilon_below = 0.01;
-    params.lat.tau_offset = 0.1;
-
-    % ------------------------------------------------------------
-    % Reputation dynamics (global decay of initial reputation)
-    % ------------------------------------------------------------
-    params.rep = struct();
-    params.rep.lambda_rep = theta(1);
-
-    % ------------------------------------------------------------
-    % Situational trust (instantaneous risk-based component)
-    % ------------------------------------------------------------
-    params.sit = struct();
-    params.sit.lambda_sit = theta(5);
-    params.sit.theta_sit = theta(8);
-
+    params.lat.tau_offset    = 0.1;
+    
     % ------------------------------------------------------------
     % Dispositional trust
     % ------------------------------------------------------------

@@ -28,8 +28,8 @@ function lat_state = trust_prepare_latent_sequence(tau_lat0, tau_disp, params)
 %   params    - global parameter struct. The latent-trust configuration is
 %               expected under params.lat with fields (all optional):
 %                   .eps_lat      - tolerance around tau_disp for “no drift”
-%                   .lambda10     - base exponential rate λ_{1,0}
-%                   .kappa01      - base logistic rate κ_{0,1}
+%                   .lambda_lat   - base exponential rate
+%                   .kappa_lat    - base logistic rate
 %                   .gamma_above  - shape parameter for “above” mapping
 %                   .epsilon_above- minimum gap parameter for “above”
 %                   .gamma_below  - shape parameter for “below” mapping
@@ -68,7 +68,7 @@ function lat_state = trust_prepare_latent_sequence(tau_lat0, tau_disp, params)
 % Numerical safety:
 %   - If any intermediate expression becomes invalid (log of non-positive
 %     arguments, divisions by zero, etc.), the function falls back to
-%     simple base rates (lambda10 / kappa01) and/or safe defaults.
+%     simple base rates (lambda_lat / kappa_lat) and/or safe defaults.
 
     % ---------------------------------------------------------------------
     % Extract latent-parameter substruct and set defaults
@@ -83,8 +83,8 @@ function lat_state = trust_prepare_latent_sequence(tau_lat0, tau_disp, params)
     eps_lat = getfield_default(plat, "eps_lat", 1e-3);
 
     % Global base rates λ_{1,0} and κ_{0,1} (optimisation variables).
-    lambda10 = getfield_default(plat, "lambda10", 1e-3);  % λ_{1,0}
-    kappa01  = getfield_default(plat, "kappa01",  1e-3);  % κ_{0,1}
+    lambda_lat = getfield_default(plat, "lambda_lat", 1e-3);  % λ_{1,0}
+    kappa_lat  = getfield_default(plat, "kappa_lat",  1e-3);  % κ_{0,1}
 
     % Hyperparameters for the above/below transformations.
     gamma_above    = getfield_default(plat, "gamma_above",    0.05);
@@ -122,7 +122,7 @@ function lat_state = trust_prepare_latent_sequence(tau_lat0, tau_disp, params)
         %   λ_{τ0,τdisp} = λ_{1,τdisp} * ln(ε / (τ0 - τ_disp)) ...
         %                                / ln( (1 - τ0) / (1 - τ_disp) )
         lambda_seq = compute_lambda_above(tau_lat0, tau_disp, ...
-                                          lambda10, gamma_above, epsilon_above);
+                                          lambda_lat, gamma_above, epsilon_above);
 
         lat_state.mode       = "above";
         lat_state.lambda_seq = lambda_seq;
@@ -135,7 +135,7 @@ function lat_state = trust_prepare_latent_sequence(tau_lat0, tau_disp, params)
     % Case 2: "below" latent episode (tau_lat0 < tau_disp - eps_lat)
     % ---------------------------------------------------------------------
     kappa_seq = compute_kappa_below(tau_lat0, tau_disp, ...
-                                    kappa01, gamma_below, ...
+                                    kappa_lat, gamma_below, ...
                                     epsilon_below, tau_offset);
 
     % Initial σ[0] from the logistic derivation:
@@ -158,9 +158,9 @@ end
 % =====================================================================
 % Helper: compute λ_{τ0,τdisp} for the "above" case
 % =====================================================================
-function lambda_seq = compute_lambda_above(tau0, tau_disp, lambda10, gamma, epsilon)
+function lambda_seq = compute_lambda_above(tau0, tau_disp, lambda_lat, gamma, epsilon)
     % Default to the base rate if anything becomes invalid.
-    lambda_seq = max(lambda10, 0);
+    lambda_seq = max(lambda_lat, 0);
 
     % Guard against pathological values of tau_disp and tau0.
     if tau_disp <= 0 || tau_disp >= 1
@@ -176,7 +176,7 @@ function lambda_seq = compute_lambda_above(tau0, tau_disp, lambda10, gamma, epsi
     if num1 <= 0 || den1 <= 0
         return;
     end
-    lambda_1_disp = lambda10 * ( log(num1) / log(den1) );
+    lambda_1_disp = lambda_lat * ( log(num1) / log(den1) );
 
     % Step 2: λ_{τ0,τdisp}.
     num2 = epsilon / (tau0 - tau_disp);
@@ -191,7 +191,7 @@ function lambda_seq = compute_lambda_above(tau0, tau_disp, lambda10, gamma, epsi
 
     % Final safety: ensure non-negative and finite.
     if ~isfinite(lambda_seq) || lambda_seq < 0
-        lambda_seq = max(lambda10, 0);
+        lambda_seq = max(lambda_lat, 0);
     end
 end
 
@@ -200,9 +200,9 @@ end
 % Helper: compute κ_{τ0,τdisp} for the "below" case
 % =====================================================================
 function kappa_seq = compute_kappa_below(tau0, tau_disp, ...
-                                         kappa01, gamma, epsilon, tau_offset)
+                                         kappa_lat, gamma, epsilon, tau_offset)
     % Default to the base rate if anything becomes invalid.
-    kappa_seq = max(kappa01, 0);
+    kappa_seq = max(kappa_lat, 0);
 
     % Basic guards on tau_disp, tau0, and tau_offset.
     if tau_disp <= 0 || tau_disp >= 1
@@ -242,7 +242,7 @@ function kappa_seq = compute_kappa_below(tau0, tau_disp, ...
         return;
     end
 
-    kappa_0_disp = kappa01 * (top1 / bot1);
+    kappa_0_disp = kappa_lat * (top1 / bot1);
 
     % -----------------------------------------------------------------
     % Step 2: κ_{τ0,τdisp}
@@ -287,7 +287,7 @@ function kappa_seq = compute_kappa_below(tau0, tau_disp, ...
         if isfinite(kappa_0_disp) && kappa_0_disp > 0
             kappa_seq = kappa_0_disp;
         else
-            kappa_seq = max(kappa01, 0);
+            kappa_seq = max(kappa_lat, 0);
         end
     end
 end

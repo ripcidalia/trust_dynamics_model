@@ -40,14 +40,14 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
     % ------------------------------------------------------------
     if nargin < 3 || isempty(theta)
         theta = zeros(8,1);
-        theta(1) = 1e-3;  % lambda_rep
-        theta(2) = 0.15;  % phi_fail
-        theta(3) = 0.10;  % psi_succ
-        theta(4) = -0.20; % a_succ
-        theta(5) = 3.0;   % lambda_sit
-        theta(6) = 1e-4;  % lambda10
-        theta(7) = 1e-4;  % kappa01
-        theta(8) = 0.5;   % theta_sit
+        theta(1) = 3e-3;  % lambda_rep
+        theta(2) = 0.5;   % alpha_sit
+        theta(3) = 1;     % lambda_sit
+        theta(4) = 0.15;  % phi_fail
+        theta(5) = 0.10;  % phi_succ
+        theta(6) = 0.20;  % a_succ
+        theta(7) = 1e-4;  % lambda_lat
+        theta(8) = 1e-4;  % kappa_lat
     else
         theta = theta(:);
         if numel(theta) ~= 8

@@ -18,15 +18,16 @@ function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mo
 % (40-item, 14-item, probe).
 %
 % Inputs:
-%   theta      7x1 parameter vector (as used in trust_cost_all /
+%   theta      8x1 parameter vector (as used in trust_cost_all /
 %              trust_cost_one_participant), with layout:
 %                1: lambda_rep
-%                2: phi_fail
-%                3: psi_succ
-%                4: a_succ
-%                5: lambda_sit
-%                6: lambda10
-%                7: kappa01
+%                2: alpha_sit
+%                3: lambda_sit
+%                4: phi_fail
+%                5: phi_succ
+%                6: a_succ
+%                7: lambda_lat
+%                8: kappa_lat
 %
 %   dt         Time step (seconds) for the simulation grid. If omitted or
 %              empty, defaults to 0.25 (consistent with the fitting runs).
@@ -85,7 +86,7 @@ function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mo
     end
 
     theta = theta(:);
-    if numel(theta) ~= 7
+    if numel(theta) ~= 8
         error("trust_residual_diagnostics: theta must be 8x1 (got %d elements).", numel(theta));
     end
 

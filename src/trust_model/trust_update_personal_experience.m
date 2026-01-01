@@ -36,9 +36,9 @@ function [delta_tau_exp, exp_state_next] = trust_update_personal_experience( ...
 %                   future extensions.
 %
 %   params        : full parameter struct. Only params.exp is used here:
-%                       params.exp.phi_fail   (ϕ ∈ (0,1))
-%                       params.exp.psi_succ   (ψ ∈ (0,1))
-%                       params.exp.a_succ     (a ∈ (0,1))
+%                       params.exp.phi_fail   (ϕ_fail ∈ (0,1))
+%                       params.exp.phi_succ   (ϕ_succ ∈ (0,1))
+%                       params.exp.a_succ     (a_succ ∈ (0,1))
 %
 %                   These define the magnitude and shape of the trust
 %                   increments for failures and successes:
@@ -150,8 +150,8 @@ end
 % Helper: success contribution τ_exp^suc(n)
 % ========================================================================
 function delta = compute_success_delta(n, pexp)
-    % Retrieve ψ (psi_succ) and a (a_succ). If invalid, return zero.
-    psi = getfield_with_default(pexp, "psi_succ", NaN);  % magnitude at first success
+    % Retrieve ψ (phi_succ) and a (a_succ). If invalid, return zero.
+    psi = getfield_with_default(pexp, "phi_succ", NaN);  % magnitude at first success
     a   = getfield_with_default(pexp, "a_succ",   NaN);  % shape parameter
 
     % ψ, a should be in (0,1).
