@@ -21,39 +21,42 @@ preprocessing
 postprocessing
 
 
-method = "fmincon";
-dt = 1;
-preset = "overnight";
-theta0 = [ % Initial conditions for parameters
-    3e-3   % lambda_rep
-    0.5    % alpha_sit
-    1.0    % lambda_sit
-    0.15   % phi_fail
-    0.10   % phi_succ
-    0.20   % a_succ
-    1e-4   % lambda_lat
-    1e-4   % kappa_lat
-];
-
-[theta_hat_ga, fval_ga, exitflag_ga, output_ga] = fit_trust_parameters(method, dt, preset, theta0);
-
-save("results.mat", "theta_hat_ga", "fval_ga", "exitflag_ga", "output_ga");
-
-% cfg = struct();
-% cfg.dt = 1.0; % Simulation time step
-% cfg.theta0 = [ % Initial conditions for parameters
-%     3e-3
-%     0.5
-%     1
-%     0.15
-%     0.10
-%     0.20
-%     1e-4
-%     1e-4
+% method = "fmincon";
+% dt = 1;
+% preset = "overnight";
+% theta0 = [ % Initial conditions for parameters
+%     3e-3   % lambda_rep
+%     0.5    % alpha_sit
+%     1.0    % lambda_sit
+%     0.15   % phi_fail
+%     0.10   % phi_succ
+%     0.20   % a_succ
+%     1e-4   % lambda_lat
+%     1e-4   % kappa_lat
 % ];
-% cfg.run_tag = "train1";
-% cfg.results_dir = "derived/fit_runs";
-% cfg.checkpoint_dir = "derived/checkpoints";
 % 
-% results = run_trust_optimisation_pipeline(cfg);
+% [theta_hat_ga, fval_ga, exitflag_ga, output_ga] = fit_trust_parameters(method, dt, preset, theta0);
+% 
+% save("results.mat", "theta_hat_ga", "fval_ga", "exitflag_ga", "output_ga");
+
+cfg = struct();
+cfg.dt = 1.0; % Simulation time step
+cfg.theta0 = [ % Initial conditions for parameters
+    3e-3
+    0.5
+    1
+    0.15
+    0.10
+    0.20
+    1e-4
+    1e-4
+];
+cfg.run_tag = "train2";
+cfg.results_dir = "derived/fit_runs";
+cfg.checkpoint_dir = "derived/checkpoints";
+
+results = run_trust_optimisation_pipeline(cfg);
+
+save("results.mat");
+
 
