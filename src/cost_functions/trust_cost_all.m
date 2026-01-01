@@ -66,7 +66,7 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
     % 1) Handle optional inputs
     % ------------------------------------------------------------
     if nargin < 3 || isempty(dt)
-        dt = 0.1;
+        dt = 1;
     end
 
     % If weights are not provided, let trust_cost_one_participant handle
@@ -94,7 +94,6 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
     for i = 1:N
         P   = participants(i);
         c_i = trust_cost_one_participant(theta, P, dt, weights, mode, steepness);
-
         % Simple sum over participants; measurement-type weights are
         % already applied inside trust_cost_one_participant.
         total_cost = total_cost + c_i;

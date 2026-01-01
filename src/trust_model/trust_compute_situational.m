@@ -36,11 +36,10 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
 %                 params.sit.lambda_sit : positive scalar risk sensitivity.
 %
 % Output:
-%   tau_sit     - scalar situational trust term in [0,1].
+%   tau_sit     - scalar situational trust term in [-1,1].
 %
 % Notes:
 %   - If risk_value is NaN or non-finite, it is treated as 0.
-%   - The output is clipped to [0,1] using trust_clip for numerical safety.
 %   - This function does not store state; it is purely instantaneous.
 
     % ----------------------------------------------------------------------
@@ -74,9 +73,4 @@ function tau_sit = trust_compute_situational(risk_value, tau_disp, sc, params)
         % Self-trusting user: higher risk leads to lower reliance on the robot
         tau_sit = 2*exp(-lambda_sit * risk_value) - 1;
     end
-
-    % ----------------------------------------------------------------------
-    % 4) Clip to [-1,1] to ensure a valid trust value
-    % ----------------------------------------------------------------------
-    tau_sit = max(min(tau_sit, 1), -1);
 end

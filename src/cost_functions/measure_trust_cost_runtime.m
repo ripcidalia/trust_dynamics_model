@@ -60,7 +60,7 @@ function measure_trust_cost_runtime(dt)
     % ------------------------------------------------------------
     % Load the measurement weights that determine the relative influence
     % of different measurement types in the WLS cost function.
-    W = load("measurement_weights.mat", "weights");
+    W = load("derived/measurement_weights.mat", "weights");
     weights = W.weights;
     disp('Loaded measurement weights:');
     disp(weights);

@@ -39,7 +39,7 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
     % 0) Default theta if not provided
     % ------------------------------------------------------------
     if nargin < 3 || isempty(theta)
-        theta = zeros(7,1);
+        theta = zeros(8,1);
         theta(1) = 1e-3;  % lambda_rep
         theta(2) = 0.15;  % phi_fail
         theta(3) = 0.10;  % psi_succ
@@ -47,10 +47,11 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
         theta(5) = 3.0;   % lambda_sit
         theta(6) = 1e-4;  % lambda10
         theta(7) = 1e-4;  % kappa01
+        theta(8) = 0.5;   % theta_sit
     else
         theta = theta(:);
-        if numel(theta) ~= 7
-            error("run_trust_diagnostics: theta must be 7x1 (got %d elements).", numel(theta));
+        if numel(theta) ~= 8
+            error("run_trust_diagnostics: theta must be 8x1 (got %d elements).", numel(theta));
         end
     end
 
@@ -230,12 +231,12 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
     yyaxis left;
     plot(sim.t_grid, sim.tau_sit_hist, 'LineWidth', 1.5);
     ylabel('\tau^{sit}');
-    ylim([0 1]);
+    ylim([-1 1]);
 
     yyaxis right;
     plot(sim.t_grid, sim.risk_hist, '--', 'LineWidth', 1.0);
     ylabel('risk');
-    ylim([0 1]);
+    ylim([-1 1]);
 
     xlabel('Time [s]');
     title('Situational trust and risk');
