@@ -114,8 +114,8 @@ function [theta_hat, fval, exitflag, output] = ...
     %   phi_fail   ∈ [0.00, 1.00]
     %   phi_succ   ∈ [0.00, 1.00], with constraint phi_succ <= phi_fail
     %   a_succ     ∈ [0.01, 0.65], from graphical inspection
-    %   lambda_lat ∈ [1e-6, 1e-2], not inteded for fast dynamics
-    %   kappa_lat  ∈ [1e-6, 1e-2], not inteded for fast dynamics
+    %   lambda_lat ∈ [1e-6, 1e-2], not intended for fast dynamics
+    %   kappa_lat  ∈ [1e-6, 1e-2], not intended for fast dynamics
 
     lb_theta = [
         1e-4;    % lambda_rep
