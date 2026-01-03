@@ -1,4 +1,4 @@
-function total_cost = trust_cost_all(theta, participants, dt, weights, mode, steepness)
+function total_cost = trust_cost_all(theta, participants, dt, weights, mode, behavior_params)
 % trust_cost_all  Weighted least-squares cost over all participants.
 %
 %   total_cost = trust_cost_all(theta, participants, dt, weights)
@@ -25,7 +25,7 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
 %   dt
 %       Time step (in seconds) for the trust simulation grid used for all
 %       participants (e.g., dt = 0.1). If omitted or empty, dt defaults to
-%       0.1.
+%       1.
 %
 %   weights
 %       Struct with measurement weights, expected fields:
@@ -39,12 +39,10 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
 %
 %   mode
 %       Simulation mode (string):
-%           "simple", or "coupled"
+%           "simple", or "coupled".
 %
-%   steepness 
-%       Controls the steepness of the probabilistic transition between the two
-%       behavioral actions (follow/ not follow). Only relevant four "coupled" mode.
-%       If omitted or empty, steepness defaults to 10.
+%   behavior_params 
+%       Relevant parameters for the behavioral model.
 %
 % Output:
 %   total_cost
@@ -77,12 +75,11 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
 
     if nargin < 5 || isempty(mode)
         mode = "simple";
-        steepness = 1;
+        behavior_params = struct();
     end
 
-    if mode == "coupled" && (nargin < 6 || isempty(steepness))
-        warning("trust_residual_diagnostics: no steepness specified for coupled mode. Proceeding with default steepness = 10.");
-        steepness = 10;
+    if mode == "coupled" && (nargin < 6 || isempty(behavior_params))
+        error("trust_residual_diagnostics: no behavioral model parameters specified for coupled mode.");
     end
 
     % ------------------------------------------------------------
@@ -93,7 +90,7 @@ function total_cost = trust_cost_all(theta, participants, dt, weights, mode, ste
 
     for i = 1:N
         P   = participants(i);
-        c_i = trust_cost_one_participant(theta, P, dt, weights, mode, steepness);
+        c_i = trust_cost_one_participant(theta, P, dt, weights, mode, behavior_params);
         % Simple sum over participants; measurement-type weights are
         % already applied inside trust_cost_one_participant.
         total_cost = total_cost + c_i;

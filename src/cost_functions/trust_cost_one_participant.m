@@ -1,4 +1,4 @@
-function cost = trust_cost_one_participant(theta, P, dt, weights, mode, steepness)
+function cost = trust_cost_one_participant(theta, P, dt, weights, mode, behavior_params)
 % trust_cost_one_participant  WLS cost for one participant.
 %
 %   cost = trust_cost_one_participant(theta, P, dt, weights)
@@ -18,32 +18,36 @@ function cost = trust_cost_one_participant(theta, P, dt, weights, mode, steepnes
 %   - single trust probes (mapped to 40-scale).
 %
 % Inputs:
-%   theta      Parameter vector for the global trust model (all participants).
-%              The mapping θ → params is handled by trust_theta_to_params,
-%              which is called inside trust_simulate_or_predict_one_participant.
+%   theta      
+%       Parameter vector for the global trust model (all participants).
+%       The mapping θ → params is handled by trust_theta_to_params,
+%       which is called inside trust_simulate_or_predict_one_participant.
 %
-%   P          Participant struct (single element), typically from:
-%                - participants_probes_mapped_stepM4.mat,
-%              enriched with:
-%                - time information (stepT1_add_times.m) and
-%                - calibrated probe values (stepM3/stepM4).
+%   P          
+%       Participant struct (single element), typically from:
+%         - participants_probes_mapped_stepM4.mat,
+%       enriched with:
+%         - time information (stepT1_add_times.m) and
+%         - calibrated probe values (stepM3/stepM4).
 %
-%   dt         Time step (in seconds) for the trust simulation grid.
-%              If omitted or empty, dt defaults to 1.
+%   dt         
+%       Time step (in seconds) for the trust simulation grid.
+%       If omitted or empty, dt defaults to 1.
 %
-%   weights    Struct specifying measurement weights with fields:
-%                .w40     weight for 40-item questionnaires
-%                .w14     weight for 14-item questionnaires (mapped to 40-scale)
-%                .w_probe weight for single trust probes (mapped to 40-scale)
-%              If omitted or empty, this function attempts to load:
-%                measurement_weights.mat  (created in stepM5).
+%   weights
+%       Struct specifying measurement weights with fields:
+%         .w40     weight for 40-item questionnaires
+%         .w14     weight for 14-item questionnaires (mapped to 40-scale)
+%         .w_probe weight for single trust probes (mapped to 40-scale)
+%       If omitted or empty, this function attempts to load:
+%          measurement_weights.mat  (created in stepM5).
 %
-%   mode       Simulation mode (string):
+%   mode
+%       Simulation mode (string):
 %               - "simple", or "coupled"
 %
-%   steepness  Controls the steepness of the probabilistic transition between the two
-%              behavioral actions (follow/ not follow). Only relevant four "coupled" mode.
-%              If omitted or empty, steepness defaults to 10.
+%   behavior_params 
+%       Relevant parameters for the behavioral model.
 %
 % Output:
 %   cost     Scalar WLS cost for this participant:
@@ -81,12 +85,11 @@ function cost = trust_cost_one_participant(theta, P, dt, weights, mode, steepnes
 
     if nargin < 5 || isempty(mode)
         mode = "simple";
-        steepness = 1;
+        behavior_params = struct();
     end
 
-    if mode == "coupled" && (nargin < 6 || isempty(steepness))
-        warning("trust_cost_one_participant: no steepness specified for coupled mode. Proceeding with default steepness = 10.");
-        steepness = 10;
+    if mode == "coupled" && (nargin < 6 || isempty(behavior_params))
+        error("trust_cost_one_participant: no behavioral model parameters specified for coupled mode.");
     end
 
     % -----------------------------
@@ -94,7 +97,7 @@ function cost = trust_cost_one_participant(theta, P, dt, weights, mode, steepnes
     % -----------------------------
     try
         % Forward simulation of the participant trajectory + predictions
-        sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, steepness);
+        sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, behavior_params);
     catch ME
         % If the simulation fails for this participant, assign a large penalty
         warning("trust_cost_one_participant: simulation failed for participant %s: %s", ...
