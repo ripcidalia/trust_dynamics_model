@@ -14,7 +14,7 @@ function results = run_trust_optimisation_pipeline(cfg)
 %
 % Required cfg fields:
 %   cfg.dt      - simulation timestep (seconds)
-%   cfg.theta0  - 7x1 initial parameter vector
+%   cfg.theta0  - 8x1 initial parameter vector
 %
 % Optional cfg fields:
 %   cfg.run_tag     - descriptive tag (default: "trust_fit")
