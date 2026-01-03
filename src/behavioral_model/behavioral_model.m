@@ -113,7 +113,7 @@ function [behavior, p] = behavioral_model(state, params)
     %   p_follow  = (1-eps)*p*_follow + eps*0.5
     if m2_flag == 1 && k_m2 ~= -1 && beta ~= -1 && eps ~= -1
         exp_term = k_m2*tau + beta*(self_confidence - 0.5);
-        p_star = 1/(1 + exp(exp_term));
+        p_star = 1/(1 + exp(-exp_term));
         p = (1 - eps)*p_star + eps*0.5;
     end
 
