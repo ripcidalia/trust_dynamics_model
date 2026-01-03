@@ -1,4 +1,4 @@
-function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mode, steepness)
+function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mode, behavior_params)
 % trust_residual_diagnostics  Global residual analysis over all participants.
 %
 %   [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta)
@@ -18,26 +18,28 @@ function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mo
 % (40-item, 14-item, probe).
 %
 % Inputs:
-%   theta      8x1 parameter vector (as used in trust_cost_all /
-%              trust_cost_one_participant), with layout:
-%                1: lambda_rep
-%                2: alpha_sit
-%                3: lambda_sit
-%                4: phi_fail
-%                5: phi_succ
-%                6: a_succ
-%                7: lambda_lat
-%                8: kappa_lat
+%   theta      
+%       8x1 parameter vector (as used in trust_cost_all /
+%       trust_cost_one_participant), with layout:
+%         1: lambda_rep
+%         2: alpha_sit
+%         3: lambda_sit
+%         4: phi_fail
+%         5: phi_succ
+%         6: a_succ
+%         7: lambda_lat
+%         8: kappa_lat
 %
-%   dt         Time step (seconds) for the simulation grid. If omitted or
-%              empty, defaults to 0.25 (consistent with the fitting runs).
+%   dt         
+%       Time step (seconds) for the simulation grid. If omitted or
+%       empty, defaults to 0.25 (consistent with the fitting runs).
 %
-%   mode       Simulation mode (string):
-%                - "simple", or "coupled"
+%   mode       
+%       Simulation mode (string):
+%         - "simple", or "coupled"
 %
-%   steepness  Controls the steepness of the probabilistic transition between the two
-%              behavioral actions (follow/ not follow). Only relevant four "coupled" mode.
-%              If omitted or empty, steepness defaults to 10.
+%   behavior_params 
+%       Relevant parameters for the behavioral model.
 %
 % Outputs:
 %   residuals_tbl  - MATLAB table with one row per measurement, columns:
@@ -77,12 +79,11 @@ function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mo
 
     if nargin < 3 || isempty(mode)
         mode = "simple";
-        steepness = 1;
+        behavior_params = 1;
     end
 
-    if mode == "coupled" && (nargin < 4 || isempty(steepness))
-        warning("trust_residual_diagnostics: no steepness specified for coupled mode. Proceeding with default steepness = 10.");
-        steepness = 10;
+    if mode == "coupled" && (nargin < 4 || isempty(behavior_params))
+        error("trust_residual_diagnostics: no behavioral parameters specified for coupled mode.");
     end
 
     theta = theta(:);
@@ -153,7 +154,7 @@ function [residuals_tbl, summary_tbl] = trust_residual_diagnostics(theta, dt, mo
         pid = string(P.participant_id);
 
         try
-            sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, steepness);
+            sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, behavior_params);
         catch ME
             warning("trust_residual_diagnostics: simulation failed for participant %s: %s", ...
                     pid, ME.message);

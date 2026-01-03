@@ -1,4 +1,4 @@
-function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
+function run_trust_diagnostics(participant_index, dt, theta, mode, behavior_params)
 % run_trust_diagnostics  Simulate and visualize trust dynamics for one participant.
 %
 %   run_trust_diagnostics()
@@ -27,12 +27,11 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
 
     if nargin < 4 || isempty(mode)
         mode = "simple";
-        steepness = 1;
+        behavior_params = struct();
     end
 
-    if mode == "coupled" && (nargin < 5 || isempty(steepness))
-        warning("run_trust_diagnostics: no steepness specified for coupled mode. Proceeding with default steepness = 10.");
-        steepness = 10;
+    if mode == "coupled" && (nargin < 5 || isempty(behavior_params))
+        error("run_trust_diagnostics: no behavioral model parameters specified for coupled mode.");
     end
 
     % ------------------------------------------------------------
@@ -83,7 +82,7 @@ function run_trust_diagnostics(participant_index, dt, theta, mode, steepness)
     % 2) Simulate or predict participant's trust dynamics
     % ------------------------------------------------------------
     
-    sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, steepness);
+    sim = trust_simulate_or_predict_one_participant(mode, theta, P, dt, behavior_params);
 
     % ------------------------------------------------------------
     % 3) Basic console summary
