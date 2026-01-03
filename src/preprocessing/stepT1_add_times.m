@@ -11,14 +11,14 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
 %   - Computes a relative time axis t_s (seconds) per event, using:
 %       * ts_client (datetime) when available, or
 %       * ts_seq as a monotone fallback.
-%   - Shifts the time axis so that the first questionnaire40pre event
-%     occurs at t = 0 (if present).
+%   - Shifts the time axis so that the first door_trial event occurs at
+%     t = 10 seconds (if present).
 %   - Injects time stamps into:
 %       P.timeline_t_s                 (aligned with P.timeline)
 %       P.doorTrials(k).t_s            (door_trial completion times)
 %       P.trustProbes(j).t_s           (trust probe times)
 %       P.questionnaires.t40_pre.t_s
-%       P.questionnaires.t40_post.t_s
+%       P.questionnaires.t40_post.t_s  (forced to last door trial + 10s)
 %       P.questionnaires.t14_mid1.t_s
 %       P.questionnaires.t14_mid2.t_s
 %
@@ -71,17 +71,15 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
     N = numel(participants);
 
     % ------------------------------------------------------------
-    % 2) Load full events table (Step 1 functionality)
+    % 2) Load full events table
     % ------------------------------------------------------------
     fprintf('[Step T1] Reading events table from %s\n', eventsCsvPath);
-    T = read_events_table(eventsCsvPath);   % existing loader for raw events
+    T = read_events_table(eventsCsvPath);
 
-    % Just in case, sort chronologically by session & ts_seq if available
+    % Sort chronologically by ts_seq if available.
     if ismember("ts_seq", T.Properties.VariableNames)
         T = sortrows(T, "ts_seq");
     end
-
-    et_all = string(T.event_type); %#ok<NASGU> % retained for potential debugging/inspection
 
     % ------------------------------------------------------------
     % 3) For each participant, compute relative times and inject
@@ -90,13 +88,13 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
         Pi = participants(i);
         pid = string(Pi.participant_id);
 
-        % session_id might be missing/empty in rare cases, so we handle both
+        % session_id might be missing/empty in rare cases, so handle both.
         sid = "";
         if isfield(Pi, "session_id") && ~isempty(Pi.session_id)
             sid = string(Pi.session_id);
         end
 
-        % Filter T to this participant (and session if available)
+        % Filter T to this participant (and session if available).
         if sid == ""
             idxP = (string(T.participant_id) == pid);
         else
@@ -121,19 +119,21 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
         % --------------------------------------------------------
         t_s = compute_relative_time_seconds(Tk);
 
-        % 3a.1) Shift times so that the first questionnaire40pre is t = 0
+        % --------------------------------------------------------
+        % 3a.1) Shift times so that the first door_trial occurs at t = 10 s
+        % --------------------------------------------------------
         et = string(Tk.event_type);
-        idxQpre = find(et == "questionnaire40pre", 1, "first");
-        if ~isempty(idxQpre)
-            t0 = t_s(idxQpre);
+        rowsDoor = find(et == "door_trial", 1, "first");
+        if ~isempty(rowsDoor)
+            tDoor0 = t_s(rowsDoor);
+            t_s = t_s - tDoor0 + 10;
         else
-            % Fallback: keep old behaviour if no questionnaire40pre
-            t0 = t_s(1);
-            warning("No questionnaire40pre found for participant %s; using first event as t=0.", pid);
+            % If no door trial exists, keep a simple reference: first event at t=0.
+            t_s = t_s - t_s(1);
+            warning("No door_trial found for participant %s; using first event as t=0.", pid);
         end
-        t_s = t_s - t0;  % now t_s(idxQpre) = 0, earlier events may be negative
 
-        % 3b) Store timeline_time_s aligned with P.timeline
+        % 3b) Store timeline_t_s aligned with P.timeline.
         %     We assume Step 2 built P.timeline in the same row order as Tk.
         if numel(Pi.timeline) ~= height(Tk)
             warning("timeline length (%d) does not match events rows (%d) for participant %s. Skipping timeline_t_s.", ...
@@ -142,11 +142,13 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
             participants(i).timeline_t_s = t_s(:);
         end
 
-        % 3c) DoorTrials times: match order by event_type == "door_trial"
-        et = string(Tk.event_type);
-        rowsDoor = find(et == "door_trial");
-        if ~isempty(rowsDoor)
-            tDoor = t_s(rowsDoor);
+        % 3c) DoorTrials times: match order by event_type == "door_trial".
+        rowsDoorAll = find(et == "door_trial");
+        tLastDoor = [];
+        if ~isempty(rowsDoorAll)
+            tDoor = t_s(rowsDoorAll);
+            tLastDoor = tDoor(end);
+
             if isfield(Pi, "doorTrials") && ~isempty(Pi.doorTrials)
                 if numel(Pi.doorTrials) ~= numel(tDoor)
                     warning("Number of doorTrials (%d) != number of door_trial rows (%d) for participant %s. Mapping in min length only.", ...
@@ -159,7 +161,7 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
             end
         end
 
-        % 3d) Trust probes times: any event_type starting with "trust_probe"
+        % 3d) Trust probes times: any event_type starting with "trust_probe".
         rowsProbe = find(startsWith(et, "trust_probe"));
         if ~isempty(rowsProbe)
             tProbe = t_s(rowsProbe);
@@ -175,7 +177,7 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
             end
         end
 
-        % 3e) Questionnaires times (treated as completion time)
+        % 3e) Questionnaires times (treated as completion time).
         qtypes = { ...
             "questionnaire40pre",  "t40_pre";  ...
             "questionnaire40post", "t40_post"; ...
@@ -189,12 +191,19 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
                 fieldName = qtypes{q,2};
                 rowsQ = find(et == evtName);
                 if ~isempty(rowsQ)
-                    % If multiple rows somehow exist, take first
+                    % If multiple rows exist, take the first.
                     tQ = t_s(rowsQ(1));
                     if isfield(Pi.questionnaires, fieldName)
                         participants(i).questionnaires.(fieldName).t_s = tQ;
                     end
                 end
+            end
+
+            % Normalize t40_post timing relative to the last door trial.
+            % This is only applied when the last door trial time is available
+            % and the t40_post struct field exists.
+            if ~isempty(tLastDoor) && isfield(Pi.questionnaires, "t40_post")
+                participants(i).questionnaires.t40_post.t_s = tLastDoor + 10;
             end
         end
     end
@@ -207,8 +216,7 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
     end
 
     % Keep the original naming convention: expose the enriched array
-    % as 'participants_clean' so all later steps (M1–M5) can load it
-    % without any code changes.
+    % as 'participants_clean' so later steps can load it without changes.
     participants_clean = participants;
 
     info_time = struct();
@@ -223,7 +231,6 @@ function stepT1_add_times(cleanMatPath, eventsCsvPath)
     fprintf('[Step T1] Time enrichment completed for %d participants.\n', numel(participants_clean));
     fprintf('          Saved to %s\n', outPath);
 end
-
 
 
 % =================================================================
@@ -253,22 +260,21 @@ function t_s = compute_relative_time_seconds(Tk)
     n = height(Tk);
     t_s = zeros(n,1);
 
-    % Case 1: ts_client exists and is non-empty
+    % Case 1: ts_client exists and is non-empty.
     if ismember("ts_client", Tk.Properties.VariableNames)
         ts = Tk.ts_client;
 
-        % Convert to datetime if needed
+        % Convert to datetime if needed.
         if iscellstr(ts) || isstring(ts) || ischar(ts)
             tsStr = string(ts);
-            % Try a few common formats; if fail, use datetime's auto
             try
-                % Expected ts_client format: 2025-11-11T13:47:25.601Z
+                % Expected format: 2025-11-11T13:47:25.601Z
                 dt = datetime(tsStr, ...
                     "InputFormat", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", ...
                     "TimeZone", "UTC");
             catch
                 try
-                    % Fallback: same but without milliseconds, just in case
+                    % Fallback: same but without milliseconds.
                     dt = datetime(tsStr, ...
                         "InputFormat", "yyyy-MM-dd'T'HH:mm:ss'Z'", ...
                         "TimeZone", "UTC");
@@ -283,7 +289,7 @@ function t_s = compute_relative_time_seconds(Tk)
             dt = NaT(n,1);
         end
 
-        % If all entries are valid datetimes, compute seconds since first
+        % If all entries are valid datetimes, compute seconds since first.
         if all(~isnat(dt))
             t0 = dt(1);
             t_s = seconds(dt - t0);
@@ -293,13 +299,12 @@ function t_s = compute_relative_time_seconds(Tk)
         end
     end
 
-    % Case 2: fallback to ts_seq as pseudo-time
+    % Case 2: fallback to ts_seq as pseudo-time.
     if ismember("ts_seq", Tk.Properties.VariableNames)
         seq = double(Tk.ts_seq);
-        seq = seq - seq(1);
-        t_s = seq;    % units are arbitrary, but monotone
+        t_s = seq - seq(1);
     else
-        % Last resort: just use row index as time
+        % Last resort: use row index as time.
         t_s = (0:n-1)';
     end
 end
