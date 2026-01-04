@@ -35,15 +35,14 @@
 %         - Compare trust model baselines and produce evaluation metrics
 %     10) stepA6_report_baseline_comparison_simple_mode(run_id)
 %         - Compile baseline-comparison reporting artifacts
+%     11) stepA7_build_behavior_dataset(run_id)
+%         - Build per-door behavioral dataset for follow/override prediction
+%     12) stepA8_behavior_fit_eval(run_id)
+%         - Fit behavioral models on TRAIN and evaluate on VALID
+%     13) stepA9_behavior_rollouts(run_id)
+%         - Coupled generative rollout analysis on VALID
 %
-% Notes
-%   - Steps A7–A9 (behavior dataset, behavioral model fit/eval, coupled rollouts)
-%     are not invoked in this script; they are typically run after A1/A3
-%     using the created run_id.
-%   - This script is intended to be executed from the project root so that
-%     relative paths under "derived/" resolve correctly.
-%
-% -------------------------------------------------------------------------
+
 
 clear; clc;
 addpath(genpath("src"));
@@ -75,6 +74,7 @@ stepA3_select_theta_for_coupled(run_id, resultsMatPath);
 stepA4_sensitivity_simple_mode(run_id, resultsMatPath);
 stepA5_compare_baselines_simple_mode(run_id, resultsMatPath);
 stepA6_report_baseline_comparison_simple_mode(run_id);
-stepA7_build_behavior_dataset(run_id);
+stepA7_build_behavior_dataset(run_id, "Split", "train");
+stepA7_build_behavior_dataset(run_id, "Split", "valid");
 stepA8_behavior_fit_eval(run_id);
 stepA9_behavior_rollouts(run_id);
