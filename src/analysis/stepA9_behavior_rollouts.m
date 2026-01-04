@@ -261,7 +261,7 @@ function [theta_star, dt, participants_valid] = local_load_theta_dt_and_valid_pa
     validPath = fullfile(a1Dir, "participants_valid_probes_mapped_stepM4.mat");
     must_exist_file(validPath, "A1 VALID participants (mapped probes)");
 
-    participants_valid = local_load_participants_struct_flexible(validPath);
+    participants_valid = load_participants_struct(validPath);
 
     % --- A3 selection -> resultsMatPath and theta_star ---
     selPath = fullfile("derived","analysis_runs",run_id,"stepA3_model_selection","selection.mat");
@@ -282,7 +282,7 @@ function [theta_star, dt, participants_valid] = local_load_theta_dt_and_valid_pa
         thetaPath = fullfile("derived","analysis_runs",run_id,"stepA3_model_selection","theta_star.mat");
         if isfile(thetaPath)
             Sth = load(thetaPath);
-            theta_star = local_find_theta_in_struct(Sth);
+            theta_star = find_theta_in_struct(Sth);
         end
     end
     if isempty(theta_star)
@@ -306,48 +306,6 @@ function [theta_star, dt, participants_valid] = local_load_theta_dt_and_valid_pa
     end
 end
 
-function P = local_load_participants_struct_flexible(matPath)
-    % Prefer project helper (used in A5). Fallback to common variable names.
-    if exist("load_participants_struct","file") == 2
-        P = load_participants_struct(matPath);
-        return;
-    end
-
-    S = load(matPath);
-    % Common conventions:
-    %   - participants (struct array)
-    %   - P (struct array)
-    %   - participants_valid
-    cand = ["participants","P","participants_valid","participants_train"];
-    for c = cand
-        if isfield(S, c)
-            P = S.(c);
-            if isstruct(P)
-                return;
-            end
-        end
-    end
-    error("[A9] Could not load participants struct from %s (no known variable names).", matPath);
-end
-
-function theta = local_find_theta_in_struct(S)
-    % Minimal version of A5's find_theta_in_struct.
-    theta = [];
-    if isempty(S) || ~isstruct(S), return; end
-    f = fieldnames(S);
-    for i = 1:numel(f)
-        v = S.(f{i});
-        if isnumeric(v) && (isvector(v) || ismatrix(v)) && numel(v) >= 1
-            % Heuristic: accept first numeric vector-ish thing
-            theta = v(:);
-            return;
-        end
-        if isstruct(v)
-            theta = local_find_theta_in_struct(v);
-            if ~isempty(theta), return; end
-        end
-    end
-end
 
 % ======================================================================
 % Convert coupled sim output -> sequences (robust to missing block index)
