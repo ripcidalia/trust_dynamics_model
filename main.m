@@ -75,3 +75,6 @@ stepA3_select_theta_for_coupled(run_id, resultsMatPath);
 stepA4_sensitivity_simple_mode(run_id, resultsMatPath);
 stepA5_compare_baselines_simple_mode(run_id, resultsMatPath);
 stepA6_report_baseline_comparison_simple_mode(run_id);
+stepA7_build_behavior_dataset(run_id);
+stepA8_behavior_fit_eval(run_id);
+stepA9_behavior_rollouts(run_id);
