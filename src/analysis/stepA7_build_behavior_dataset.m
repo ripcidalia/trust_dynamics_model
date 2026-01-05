@@ -40,7 +40,7 @@ function stepA7_build_behavior_dataset(run_id, varargin)
     % -------------------------
     if nargin < 1 || isempty(run_id)
         error("stepA7_build_behavior_dataset: run_id is required.");
-    end<
+    end
     run_id = string(run_id);
 
     p = inputParser;
